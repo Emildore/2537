@@ -1,4 +1,6 @@
 const express = require('express');
+const bcrypt = require('bcrypt');
+const saltRounds = 12;
 
 const session = require('express-session');
 
@@ -76,8 +78,10 @@ app.get('/createUser', (req,res) => {
 app.post('/submitUser', (req,res) => {
     var username = req.body.username;
     var password = req.body.password;
+
+    var hashedPassword = bcrypt.hashSync(password, saltRounds);
     
-    users.push({username: username, password: password});
+    users.push({username: username, password: hashedPassword});
     
     console.log(users);
     
