@@ -46,8 +46,6 @@ app.use(session({
 }
 ));
 
-// var numPageHits = 0;
-
 app.get('/', (req, res) => {
     if (req.session.numPageHits == null) {
         req.session.numPageHits = 0;
@@ -55,6 +53,31 @@ app.get('/', (req, res) => {
         req.session.numPageHits++;
     }
     res.send('You have hit ' + req.session.numPageHits + ' times\n');
+});
+
+app.get('/nosql-injection', async (req,res) => {
+    var username = req.query.username;
+
+    if (!username) {
+        res.send(`<h3>No User Provided <br> Try: <br> /nosql-injection?user=name <br> or <br> /nosql-injection?user[$ne]=name</h3>`);
+        return;
+    }
+    console.log("username: " + username);
+
+    const schema = Joi.string().max(20).required();
+    const validationResult = schema.validate(username);
+
+    if (validationResult.error != null) {
+        console.log(validationResult.error);
+        es.send("<h1 style='color:darkred;'>A NoSQL injection attack was detected!</h1>");
+        return;
+    }
+
+    const result = await userCollection.findOne({username: username}).project({username: 1, password: 1, _id: 1}).toArray();
+
+    console.log(result);
+
+    res.send(`<h1> Hello ${username} </h1>`);
 });
 
 app.get('/about', (req,res) => {
