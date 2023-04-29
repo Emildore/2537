@@ -1,25 +1,36 @@
 const express = require('express');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const bcrypt = require('bcrypt');
 const saltRounds = 12;
 
-const session = require('express-session');
+const port = process.env.PORT || 3000;
 
 const app = express();
+
+const expireTime = 1000 * 60 * 60 * 24; // 1 day
 
 //Users and passwords (in memory 'database')
 var users = [];
 
-app.use(express.urlencoded({extended: false}));
-
-const port = process.env.PORT || 3000;
+/* Secret information section */
+const mongodb_user = "mongodb_user";
+const mongodb_password = "mongodb_password";
 
 const node_session_secret = '018b2db5-23f7-48c7-9049-3049ba4c7d4b'; // Define the variable here
+/* End secret information section */
+
+app.use(express.urlencoded({extended: false}));
+
+var mongoStore = MongoStore.create({
+    mongoUrl: `mongodb+srv://${mongodb_user}:${mongodb_password}@cluster0.8s3d4o0.mongodb.net/test`,
+})
 
 app.use(session({
     secret: node_session_secret,
-    //store: mongoStore, //default is memory store
-    saveUninitialized: false,
-    resave: true
+        store: mongoStore, //default is memory store
+        saveUninitialized: false,
+        resave: true
 }
 ));
 
@@ -115,6 +126,10 @@ app.post('/loggingIn', (req,res) => {
     for (i = 0; i < users.length; i++) {
         if (users[i].username == username) {
             if (bcrypt.compareSync(password, users[i].password)) {
+                req.session.authenticated = true;
+                req.session.username = username;
+                req.session.cookie.maxAge = expireTime;
+                
                 res.redirect('/loggedIn');
                 return;
             }
@@ -126,6 +141,9 @@ app.post('/loggingIn', (req,res) => {
 });
 
 app.get('/loggedIn', (req,res) => {
+    if (!req.session.authenticated) {
+        res.redirect('/login');
+    }
     var html = `
     You are logged in!
     `;
