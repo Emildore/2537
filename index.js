@@ -16,6 +16,7 @@ var users = [];
 /* Secret information section */
 const mongodb_user = "mongodb_user";
 const mongodb_password = "mongodb_password";
+const mongodb_session_secret = "5a970f2e-c428-4e12-9438-012fb22ff6b3"
 
 const node_session_secret = '018b2db5-23f7-48c7-9049-3049ba4c7d4b'; // Define the variable here
 /* End secret information section */
@@ -24,6 +25,9 @@ app.use(express.urlencoded({extended: false}));
 
 var mongoStore = MongoStore.create({
     mongoUrl: `mongodb+srv://${mongodb_user}:${mongodb_password}@cluster0.8s3d4o0.mongodb.net/test`,
+    crypto: {
+        secret: mongodb_session_secret
+    }
 })
 
 app.use(session({
