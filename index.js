@@ -1,3 +1,4 @@
+require("./utils.js")
 
 require('dotenv').config();
 const express = require('express');
@@ -10,23 +11,28 @@ const port = process.env.PORT || 3000;
 
 const app = express();
 
+const Joi = require('joi');
+
 const expireTime = 1000 * 60 * 60 * 24; // 1 day
 
-//Users and passwords (in memory 'database')
-var users = [];
-
 /* Secret information section */
+const mongodb_host = process.env.MONGODB_HOST;
 const mongodb_user = process.env.MONGODB_USER;
 const mongodb_password = process.env.MONGODB_PASSWORD;
+const mongodb_database = process.env.MONGODB_DATABASE;
 const mongodb_session_secret = process.env.MONGODB_SESSION_SECRET;
 
 const node_session_secret = process.env.NODE_SESSION_SECRET;
 /* End secret information section */
 
+var {database} = include('databaseConnection');
+
+const userCollection = database.db(mongodb_database).collection("users");
+
 app.use(express.urlencoded({extended: false}));
 
 var mongoStore = MongoStore.create({
-    mongoUrl: `mongodb+srv://${mongodb_user}:${mongodb_password}@cluster0.8s3d4o0.mongodb.net/test`,
+    mongoUrl: `mongodb+srv://${mongodb_user}:${mongodb_password}@${mongodb_host}/test`,
     crypto: {
         secret: mongodb_session_secret
     }
@@ -105,45 +111,66 @@ app.get('/login', (req,res) => {
     res.send(html);
 });
 
-app.post('/submitUser', (req,res) => {
+app.post('/submitUser', async (req,res) => {
     var username = req.body.username;
     var password = req.body.password;
 
-    var hashedPassword = bcrypt.hashSync(password, saltRounds);
-    
-    users.push({username: username, password: hashedPassword});
-    
-    console.log(users);
-    
-    var usersHtml = "";
-    for (i = 0; i < users.length; i++) {
-        usersHtml += "<li>" + users[i].username + ": " + users[i].password + "</li>";
+    const schema = Joi.object(
+        {
+        username: Joi.string().alphanum().max(20).required(),
+        password: Joi.string().max(20).required()
         }
-        
-        var html = "<ul>" + usersHtml + "</ul>";
-        res.send(html);
-});
+    );
 
-app.post('/loggingIn', (req,res) => {
-    var username = req.body.username;
-    var password = req.body.password;
-
-    var usersHtml = "";
-    for (i = 0; i < users.length; i++) {
-        if (users[i].username == username) {
-            if (bcrypt.compareSync(password, users[i].password)) {
-                req.session.authenticated = true;
-                req.session.username = username;
-                req.session.cookie.maxAge = expireTime;
-                
-                res.redirect('/loggedIn');
-                return;
-            }
-        }
+    const validationResult = schema.validate({username, password});
+    if (validationResult.error != null) {
+        console.log(validationResult.error);
+        res.redirect('/createUser');
+        return;
     }
 
-    //user and password not found
-    res.redirect('/login');
+    var hashedPassword = await bcrypt.hash(password, saltRounds);
+        await userCollection.insertOne({username: username, password: hashedPassword});
+        console.log("inserted user");
+
+    var html = "Successfully created user: " + username + "<br><a href='/login'>Login</a>";
+    res.send(html);
+});
+
+app.post('/loggingIn', async (req,res) => {
+    var username = req.body.username;
+    var password = req.body.password;
+
+    const schema = Joi.string().max(20).required();
+    const validationResult = schema.validate(username);
+    if (validationResult.error != null) {
+        console.log(validationResult.error);
+        res.redirect('/login');
+        return;
+    }
+
+    const result = await userCollection.find({username: username}).project({username: 1, password: 1, _id: 1}).toArray();
+    console.log(result);
+
+    if (result.length != 1) {
+        console.log("User Not Found");
+        res.redirect('/login');
+        return;
+    }
+
+    if (await bcrypt.compare(password, result[0].password)) {
+        console.log("Correct password");
+        req.session.authenticated = true;
+        req.session.username = username;
+        req.session.cookie.maxAge = expireTime;
+
+        res.redirect('/loggedIn');
+        return;
+    } else {
+        console.log("Incorrect password");
+        res.redirect('/login');
+        return;
+    }
 });
 
 app.get('/loggedIn', (req,res) => {
