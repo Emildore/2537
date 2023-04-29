@@ -4,6 +4,9 @@ const session = require('express-session');
 
 const app = express();
 
+//Users and passwords (in memory 'database')
+var users = [];
+
 app.use(express.urlencoded({extended: false}));
 
 const port = process.env.PORT || 3000;
@@ -57,6 +60,34 @@ app.post('/submitEmail', (req,res) => {
     } else {
         res.send("Thanks for subscribing with your email: "+email);
     }
+});
+
+app.get('/createUser', (req,res) => {
+    var html = `
+        <form action='/submitUser' method='post'>
+            <input name='username' type='text' placeholder='username'>
+            <input name='password' type='password' placeholder='password'>
+            <button>Submit</button>
+        </form>
+    `;
+    res.send(html);
+});
+
+app.post('/submitUser', (req,res) => {
+    var username = req.body.username;
+    var password = req.body.password;
+    
+    users.push({username: username, password: password});
+    
+    console.log(users);
+    
+    var usersHtml = "";
+    for (i = 0; i < users.length; i++) {
+        usersHtml += "<li>" + users[i].username + ": " + users[i].password + "</li>";
+        }
+        
+        var html = "<ul>" + usersHtml + "</ul>";
+        res.send(html);
 });
 
 app.get('/cat/:id', (req,res) => {
