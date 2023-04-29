@@ -13,7 +13,7 @@ const app = express();
 
 const Joi = require('joi');
 
-const expireTime = 1000 * 60 * 60 * 24; // 1 day
+const expireTime = 1000 * 60 * 60 ; // 1 Hour
 
 /* Secret information section */
 const mongodb_host = process.env.MONGODB_HOST;
@@ -52,7 +52,11 @@ app.get('/', (req, res) => {
     } else {
         req.session.numPageHits++;
     }
-    res.send('You have hit ' + req.session.numPageHits + ' times\n');
+    res.send(`
+    <p>You have hit ${req.session.numPageHits} times</p>
+    <button onclick="window.location.href='/createUser'">Create User</button>
+    <button onclick="window.location.href='/login'">Login</button>
+    `);
 });
 
 app.get('/nosql-injection', async (req,res) => {
@@ -131,6 +135,9 @@ app.get('/login', (req,res) => {
             <button>Submit</button>
         </form>
     `;
+    if (req.query.loginError) {
+        html += "<br> Invalid username or password";
+    }
     res.send(html);
 });
 
@@ -156,7 +163,10 @@ app.post('/submitUser', async (req,res) => {
         await userCollection.insertOne({username: username, password: hashedPassword});
         console.log("inserted user");
 
-    var html = "Successfully created user: " + username + "<br><a href='/login'>Login</a>";
+    req.session.authenticated = true;
+    req.session.username = username;
+
+    var html = "Successfully created user: " + username + "<br><a href='/loggedIn'>Login</a>";
     res.send(html);
 });
 
@@ -177,7 +187,7 @@ app.post('/loggingIn', async (req,res) => {
 
     if (result.length != 1) {
         console.log("User Not Found");
-        res.redirect('/login');
+        res.redirect('/login?loginError=1');
         return;
     }
 
@@ -191,17 +201,32 @@ app.post('/loggingIn', async (req,res) => {
         return;
     } else {
         console.log("Incorrect password");
-        res.redirect('/login');
+        res.redirect('/login?loginError=1');
         return;
     }
 });
 
 app.get('/loggedIn', (req,res) => {
     if (!req.session.authenticated) {
-        res.redirect('/login');
+        return res.redirect('/login');
     }
+
+    // Array of image URLs
+    const images = [
+    '/Cat1.jpg',
+    '/Cat2.jpg',
+    '/Cat3.jpg'
+    ];
+
+    // Generate random index for image array
+    const randomIndex = Math.floor(Math.random() * images.length);
+
+    // Set image URL in session
+    req.session.image = images[randomIndex];
+
     var html = `
     You are logged in!<br><br>
+    <img src="${req.session.image}" width="300" height="400"><br><br>
     <form action="/logout" method="post">
         <button type="submit">Log out</button>
     </form>
@@ -209,32 +234,16 @@ app.get('/loggedIn', (req,res) => {
     res.send(html);
 });
 
-app.post('/logout', (req,res) => {
+app.post('/logout', (req, res) => {
     req.session.destroy();
     var html = `
-    You are logged out.
+      <div>You are logged out.</div>
+      <form action="/" method="get">
+        <button type="submit">Home</button>
+      </form>
     `;
     res.send(html);
-});
-
-app.get('/cat/:id', (req,res) => {
-
-    var cat = req.params.id;
-
-    if (cat == 1) {
-        res.send("Cat1: <img src='/Cat1.jpg' style='width:250px;'>");
-    }
-    else if (cat == 2) {
-        res.send("Cat2: <img src='/Cat2.jpg' style='width:250px;'>");
-    }
-    else if (cat == 3) {
-        res.send("Cat3: <img src='/Cat3.jpg' style='width:250px;'>");
-    }
-    else {
-        res.send("Invalid cat id: "+cat);
-    }
-});
-
+  });
 
 app.use(express.static(__dirname + "/public"));
 
