@@ -27,6 +27,33 @@ app.get('/', (req, res) => {
     res.send('You have hit ' + req.session.numPageHits + ' times\n');
 });
 
+app.get('/about', (req,res) => {
+    var color = req.query.color;
+
+    res.send("<h1 style='color:"+color+";'>ET</h1>");
+});
+
+app.get('/cat/:id', (req,res) => {
+
+    var cat = req.params.id;
+
+    if (cat == 1) {
+        res.send("Cat1: <img src='/Cat1.jpg' style='width:250px;'>");
+    }
+    else if (cat == 2) {
+        res.send("Cat2: <img src='/Cat2.jpg' style='width:250px;'>");
+    }
+    else if (cat == 3) {
+        res.send("Cat3: <img src='/Cat3.jpg' style='width:250px;'>");
+    }
+    else {
+        res.send("Invalid cat id: "+cat);
+    }
+});
+
+
+app.use(express.static(__dirname + "/public"));
+
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
