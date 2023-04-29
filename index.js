@@ -4,6 +4,8 @@ const session = require('express-session');
 
 const app = express();
 
+app.use(express.urlencoded({extended: false}));
+
 const port = process.env.PORT || 3000;
 
 const node_session_secret = '018b2db5-23f7-48c7-9049-3049ba4c7d4b'; // Define the variable here
@@ -31,6 +33,30 @@ app.get('/about', (req,res) => {
     var color = req.query.color;
 
     res.send("<h1 style='color:"+color+";'>ET</h1>");
+});
+
+app.get('/contact', (req,res) => {
+    var missingEmail = req.query.missing;
+    var html = `
+        email address:
+        <form action='/submitEmail' method='post'>
+            <input name='email' type='text' placeholder='email'>
+            <button>Submit</button>
+        </form>
+    `;
+    if (missingEmail) {
+        html += "<br> email is required";
+    }
+    res.send(html);
+});
+
+app.post('/submitEmail', (req,res) => {
+    var email = req.body.email;
+    if (!email) {
+        res.redirect('/contact?missing=true');
+    } else {
+        res.send("Thanks for subscribing with your email: "+email);
+    }
 });
 
 app.get('/cat/:id', (req,res) => {
