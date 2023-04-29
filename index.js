@@ -201,7 +201,18 @@ app.get('/loggedIn', (req,res) => {
         res.redirect('/login');
     }
     var html = `
-    You are logged in!
+    You are logged in!<br><br>
+    <form action="/logout" method="post">
+        <button type="submit">Log out</button>
+    </form>
+    `;
+    res.send(html);
+});
+
+app.post('/logout', (req,res) => {
+    req.session.destroy();
+    var html = `
+    You are logged out.
     `;
     res.send(html);
 });
