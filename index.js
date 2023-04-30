@@ -198,7 +198,7 @@ app.post('/submitUser', async (req,res) => {
     req.session.authenticated = true;
     req.session.username = username;
 
-    var html = "Successfully Signed Up: " + username + "<br><a href='/members'>Login</a>";
+    var html = `<h2>Successfully Signed Up: ${username}</h2> <form action='/members' method='get'><button type='submit'>Members Page</button></form>`;
     res.send(html);
 });
 
