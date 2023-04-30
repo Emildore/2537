@@ -129,9 +129,9 @@ app.get('/signUp', (req,res) => {
 });
 
 app.post('/submitUser', async (req,res) => {
-    var username = req.body.username.toLowerCase();
+    var username = req.body.username;
     var password = req.body.password;
-    var email = req.body.email.toLowerCase();
+    var email = req.body.email;
 
     const queryParams = [];
     if (!username) {
@@ -190,9 +190,10 @@ app.post('/submitUser', async (req,res) => {
 
     req.session.authenticated = true;
     req.session.username = username;
+    req.session.message = `Successfully Signed Up: ${username}.`;
 
-    var html = `<h2>Successfully Signed Up: ${username}</h2> <form action='/members' method='get'><button type='submit'>Members Page</button></form>`;
-    res.send(html);
+    // redirect to members page
+    res.redirect('/members');
 });
 
 app.get('/login', (req,res) => {
