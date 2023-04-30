@@ -47,22 +47,38 @@ app.use(session({
 ));
 
 app.get('/', (req, res) => {
-    if (req.session.numPageHits == null) {
-        req.session.numPageHits = 0;
-    } else {
-        req.session.numPageHits++;
-    }
 
     var html = `
     <h1> Comp 2537 <br> Assignment 1 <br> Home Page</h1>
-    <p>You have hit ${req.session.numPageHits} times</p>
-    <form action='/createUser' method='get'>
-        <button type='submit'>Create User</button>
-    </form>
-    <form action='/login' method='get'>
-        <button type='submit'>Login</button>
-    </form>
     `
+
+    if (req.session.authenticated) {
+        // User is logged in
+        html += `
+        <h2>Hello, ${req.session.username}!</h2>
+        <form action='/members' method='get'>
+            <button type='submit'>Members Area</button>
+        </form>
+        <form action='/logout' method='post'>
+            <button type='submit'>Log out</button>
+        </form>
+        `;
+    } else {
+        // User is not logged in
+        html += `
+        <form action='/signUp' method='get'>
+            <button type='submit'>Sign Up</button>
+        </form>
+        <form action='/login' method='get'>
+            <button type='submit'>Login</button>
+        </form>
+        `;
+    }
+
+    if (req.query.notLoggedIn) {
+        html += "<p style='color: red;'>You must be logged in to access the members page.</p>";
+    }
+
     res.send(html);
 });
 
@@ -91,7 +107,7 @@ app.get('/nosql-injection', async (req,res) => {
     res.send(`<h1> Hello ${username} </h1>`);
 });
 
-app.get('/createUser', (req,res) => {
+app.get('/signUp', (req,res) => {
     var error = req.query.error;
     var errorMessage = "";
 
@@ -115,7 +131,7 @@ app.get('/createUser', (req,res) => {
     }
     
     var html = `
-        <h1> Create User: </h1>
+        <h1>Sign Up: </h1>
         ${errorMessage}
         ${blankFieldsMessage}
         <form action='/submitUser' method='post'>
@@ -138,7 +154,7 @@ app.post('/submitUser', async (req,res) => {
     var email = req.body.email.toLowerCase();
 
     if (!username || !password || !email) {
-        res.redirect('/createUser?blankFields=true');
+        res.redirect('/signUp?blankFields=true');
         return;
     }
 
@@ -153,7 +169,7 @@ app.post('/submitUser', async (req,res) => {
     const validationResult = schema.validate({username, password, email});
     if (validationResult.error != null) {
         console.log(validationResult.error);
-        res.redirect('/createUser?error=password');
+        res.redirect('/signUp?error=password');
         return;
     }
 
@@ -166,10 +182,10 @@ app.post('/submitUser', async (req,res) => {
 
     if (existingUser) {
         if (existingUser.username.toLowerCase() === username) {
-        res.redirect('/createUser?error=username');
+        res.redirect('/signUp?error=username');
         return;
         } else {
-        res.redirect('/createUser?error=email');
+        res.redirect('/signUp?error=email');
         return;
         }
     }
@@ -181,7 +197,7 @@ app.post('/submitUser', async (req,res) => {
     req.session.authenticated = true;
     req.session.username = username;
 
-    var html = "Successfully created user: " + username + "<br><a href='/members'>Login</a>";
+    var html = "Successfully Signed Up: " + username + "<br><a href='/members'>Login</a>";
     res.send(html);
 });
 
@@ -209,10 +225,8 @@ app.get('/login', (req,res) => {
     var blankFieldsMessage = "";
 
     if (blankFields) {
-        blankFieldsMessage = "<p style='color: red;'>Fields cannot be left blank.</p>";
+        html += "<p style='color: red;'>Fields cannot be left blank.</p>";
     }
-
-    html += blankFieldsMessage;
     
     res.send(html);
 });
@@ -265,7 +279,7 @@ app.post('/loggingIn', async (req,res) => {
 
 app.get('/members', (req,res) => {
     if (!req.session.authenticated) {
-        return res.redirect('/login');
+        return res.redirect('/?notLoggedIn=true')
     }
 
     // Array of image URLs
@@ -282,8 +296,11 @@ app.get('/members', (req,res) => {
     req.session.image = images[randomIndex];
 
     var html = `
-    You are logged in!<br><br>
+    <h2>${req.session.username}'s Page</h2>
     <img src="${req.session.image}" width="300" height="400"><br><br>
+    <form action="/" method="get">
+    <button type="submit">Home</button>
+    </form>
     <form action="/logout" method="post">
         <button type="submit">Log out</button>
     </form>
@@ -302,11 +319,16 @@ app.post('/logout', (req, res) => {
     res.send(html);
 });
 
+app.get("/does_not_exist", (req, res) => {
+    res.status(404);
+    var html = `<h1>404 - Page Not Found</h1>`;
+    res.send(html);
+});
+
 app.use(express.static(__dirname + "/public"));
 
 app.get("*", (req,res) => {
-	res.status(404);
-	res.send("Page not found - 404");
+    res.redirect('/does_not_exist');
 })
 
 app.listen(port, () => {
