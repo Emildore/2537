@@ -82,31 +82,6 @@ app.get('/', (req, res) => {
     res.send(html);
 });
 
-app.get('/nosql-injection', async (req,res) => {
-    var username = req.query.username;
-
-    if (!username) {
-        res.send(`<h3>No User Provided <br> Try: <br> /nosql-injection?user=name <br> or <br> /nosql-injection?user[$ne]=name</h3>`);
-        return;
-    }
-    console.log("username: " + username);
-
-    const schema = Joi.string().max(20).required();
-    const validationResult = schema.validate(username);
-
-    if (validationResult.error != null) {
-        console.log(validationResult.error);
-        es.send("<h1 style='color:darkred;'>A NoSQL injection attack was detected!</h1>");
-        return;
-    }
-
-    const result = await userCollection.findOne({username: username}).project({username: 1, password: 1, _id: 1}).toArray();
-
-    console.log(result);
-
-    res.send(`<h1> Hello ${username} </h1>`);
-});
-
 app.get('/signUp', (req,res) => {
     var error = req.query.error;
     var errorMessage = "";
@@ -124,17 +99,21 @@ app.get('/signUp', (req,res) => {
         passwordMessage += "<p style='color: red;'>Please try again.</p>";
     }
 
-    var blankFields = req.query.blankFields;
-    var blankFieldsMessage = "";
+    if (req.query.blankUsername) {
+        errorMessage += "<p style='color: red;'>Username field cannot be left blank.</p>";
+    }
 
-    if (blankFields) {
-        blankFieldsMessage = "<p style='color: red;'>Fields cannot be left blank.</p>";
+    if (req.query.blankEmail) {
+        errorMessage += "<p style='color: red;'>Email field cannot be left blank.</p>";
+    }
+
+    if (req.query.blankPassword) {
+        errorMessage += "<p style='color: red;'>Password field cannot be left blank.</p>";
     }
     
     var html = `
         <h1>Sign Up: </h1>
         ${errorMessage}
-        ${blankFieldsMessage}
         <form action='/submitUser' method='post'>
         <input name='username' type='text' placeholder='username'><br><br>
         <input name='email' type='email' placeholder='email'><br>
@@ -154,11 +133,25 @@ app.post('/submitUser', async (req,res) => {
     var password = req.body.password;
     var email = req.body.email.toLowerCase();
 
-    if (!username || !password || !email) {
-        res.redirect('/signUp?blankFields=true');
+    const queryParams = [];
+    if (!username) {
+        queryParams.push("blankUsername=true");
+    }
+
+    if (!password) {
+        queryParams.push("blankPassword=true");
+    }
+
+    if (!email) {
+        queryParams.push("blankEmail=true");
+    }
+
+    if (queryParams.length > 0) {
+        res.redirect(`/signUp?${queryParams.join('&')}`);
         return;
     }
 
+    // Joi validation to check if the submitted username, password, and email meet specific requirements when signing up a new user.
     const schema = Joi.object(
         {
         username: Joi.string().alphanum().max(20).required(),
@@ -219,14 +212,19 @@ app.get('/login', (req,res) => {
         </form>
     `;
     if (req.query.loginError) {
-        html += "<p style='color: red;'>Invalid username or password</p>";
+        html += "<p style='color: red;'>Invalid username and/or password</p>";
     }
 
     var blankFields = req.query.blankFields;
-    var blankFieldsMessage = "";
-
     if (blankFields) {
-        html += "<p style='color: red;'>Fields cannot be left blank.</p>";
+        const fields = blankFields.split(',');
+        fields.forEach(field => {
+            if (field === "identifier") {
+                html += "<p style='color: red;'>Username or email field cannot be left blank.</p>";
+            } else if (field === "password") {
+                html += "<p style='color: red;'>Password field cannot be left blank.</p>";
+            }
+        });
     }
     
     res.send(html);
@@ -236,6 +234,21 @@ app.post('/loggingIn', async (req,res) => {
     var identifier = req.body.identifier;
     var password = req.body.password;
 
+    const blankFields = [];
+    if (!identifier) {
+        blankFields.push("identifier");
+    }
+
+    if (!password) {
+        blankFields.push("password");
+    }
+
+    if (blankFields.length > 0) {
+        res.redirect(`/login?blankFields=${blankFields.join(',')}`);
+        return;
+    }
+
+    // Joi validation to check if the submitted identifier (username or email) meets specific requirements when logging in.
     const schema = Joi.string().max(20).required();
     const validationResult = schema.validate(identifier);
     if (validationResult.error != null) {
