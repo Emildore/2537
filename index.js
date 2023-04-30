@@ -52,7 +52,9 @@ app.get('/', (req, res) => {
     } else {
         req.session.numPageHits++;
     }
-    res.send(`
+
+    var html = `
+    <h1> Comp 2537 <br> Assignment 1 <br> Home Page</h1>
     <p>You have hit ${req.session.numPageHits} times</p>
     <form action='/createUser' method='get'>
         <button type='submit'>Create User</button>
@@ -60,7 +62,8 @@ app.get('/', (req, res) => {
     <form action='/login' method='get'>
         <button type='submit'>Login</button>
     </form>
-    `);
+    `
+    res.send(html);
 });
 
 app.get('/nosql-injection', async (req,res) => {
@@ -103,10 +106,18 @@ app.get('/createUser', (req,res) => {
     if (req.query.error && req.query.error.includes("password")) {
         var passwordMessage = "<p style='color: red;'>Password must contain at least <br> 1 special character,<br> 1 upper case letter,<br> 1 number, <br>and be at least 6 characters long.</p>";
     }
+
+    var blankFields = req.query.blankFields;
+    var blankFieldsMessage = "";
+
+    if (blankFields) {
+        blankFieldsMessage = "<p style='color: red;'>Fields cannot be left blank.</p>";
+    }
     
     var html = `
         <h1> Create User: </h1>
         ${errorMessage}
+        ${blankFieldsMessage}
         <form action='/submitUser' method='post'>
         <input name='username' type='text' placeholder='username'><br><br>
         <input name='email' type='email' placeholder='email'><br>
@@ -118,7 +129,7 @@ app.get('/createUser', (req,res) => {
         <button type='submit'>Back</button>
         </form>
     `;
-        res.send(html);
+    res.send(html);
 });
 
 app.post('/submitUser', async (req,res) => {
@@ -126,6 +137,10 @@ app.post('/submitUser', async (req,res) => {
     var password = req.body.password;
     var email = req.body.email.toLowerCase();
 
+    if (!username || !password || !email) {
+        res.redirect('/createUser?blankFields=true');
+        return;
+    }
 
     const schema = Joi.object(
         {
@@ -189,6 +204,16 @@ app.get('/login', (req,res) => {
     if (req.query.loginError) {
         html += "<p style='color: red;'>Invalid username or password</p>";
     }
+
+    var blankFields = req.query.blankFields;
+    var blankFieldsMessage = "";
+
+    if (blankFields) {
+        blankFieldsMessage = "<p style='color: red;'>Fields cannot be left blank.</p>";
+    }
+
+    html += blankFieldsMessage;
+    
     res.send(html);
 });
 
@@ -200,7 +225,7 @@ app.post('/loggingIn', async (req,res) => {
     const validationResult = schema.validate(identifier);
     if (validationResult.error != null) {
         console.log(validationResult.error);
-        res.redirect('/login');
+        res.redirect('/login?blankFields=true');
         return;
     }
 
