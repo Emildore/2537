@@ -175,7 +175,7 @@ app.post('/submitUser', async (req,res) => {
     });
 
     if (existingUser) {
-        if (existingUser.username.toLowerCase() === username) {
+        if (existingUser.username.toLowerCase() === username.toLowerCase()) {
         res.redirect('/signUp?error=username');
         return;
         } else {
@@ -191,6 +191,7 @@ app.post('/submitUser', async (req,res) => {
     req.session.authenticated = true;
     req.session.username = username;
     req.session.message = `Successfully Signed Up: ${username}.`;
+    req.session.justSignedUp = true; // set flag to indicate that the user just signed up
 
     // redirect to members page
     res.redirect('/members');
@@ -277,6 +278,7 @@ app.post('/loggingIn', async (req,res) => {
         return;
     }
 
+    //set session variables
     if (await bcrypt.compare(password, result[0].password)) {
         console.log("Correct password");
         req.session.authenticated = true;
@@ -294,7 +296,7 @@ app.post('/loggingIn', async (req,res) => {
 
 app.get('/members', (req,res) => {
     if (!req.session.authenticated) {
-        return res.redirect('/?notLoggedIn=true')
+        return res.redirect('/?notLoggedIn=true');
     }
 
     // Array of image URLs
@@ -311,8 +313,12 @@ app.get('/members', (req,res) => {
     req.session.image = images[randomIndex];
 
     var html = `
-    <h2>${req.session.username}'s Page</h2>
-    <img src="${req.session.image}" width="300" height="400"><br><br>
+    <h2>${req.session.username}'s Page</h2>`;
+    if (req.session.justSignedUp) {
+        html += `<p>Successfully signed up as ${req.session.username}!</p>`;
+        req.session.justSignedUp = false; // reset flag
+    }
+    html += `<img src="${req.session.image}" width="300" height="400"><br><br>
     <form action="/" method="get">
     <button type="submit">Home</button>
     </form>
