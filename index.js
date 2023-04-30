@@ -121,6 +121,7 @@ app.get('/signUp', (req,res) => {
 
     if (req.query.error && req.query.error.includes("password")) {
         var passwordMessage = "<p style='color: red;'>Password must contain at least <br> 1 special character,<br> 1 upper case letter,<br> 1 number, <br>and be at least 6 characters long.</p>";
+        passwordMessage += "<p style='color: red;'>Please try again.</p>";
     }
 
     var blankFields = req.query.blankFields;
