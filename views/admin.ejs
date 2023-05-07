@@ -1,0 +1,27 @@
+<%- include("templates/header") %>
+  <h1>Admin Page</h1>
+  <h2>User List</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>User Type</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% for(let i = 0; i < users.length; i++) { %>
+        <%- include('templates/user', {user: users[i]}) %>
+      <% } %>
+    </tbody>
+  </table>
+
+  <form action="/members" method="get" style="display:inline;">
+    <input type="submit" value="Members Page">
+  </form>
+
+  <form action="/logout" method="get" style="display:inline;">
+    <input type="submit" value="Logout">
+  </form>
+<%- include("templates/footer") %>

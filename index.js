@@ -115,7 +115,7 @@ app.post('/submitUser', async (req,res) => {
     }
 
     var hashedPassword = await bcrypt.hash(password, saltRounds);
-        await userCollection.insertOne({username: username, password: hashedPassword, email: email});
+        await userCollection.insertOne({username: username, password: hashedPassword, email: email, userType: "user"});
         console.log("inserted user");
 
     req.session.authenticated = true;
@@ -171,7 +171,7 @@ app.post('/loggingIn', async (req,res) => {
 
     const result = await userCollection
         .find(query)
-        .project({username: 1, password: 1, _id: 1})
+        .project({username: 1, password: 1,user_type: 1, _id: 1})
         .toArray();
     console.log(result);
     
@@ -186,6 +186,7 @@ app.post('/loggingIn', async (req,res) => {
         console.log("Correct password");
         req.session.authenticated = true;
         req.session.username = result[0].username;
+        req.session.user_type = result[0].user_type;
         req.session.cookie.maxAge = expireTime;
 
         res.redirect('/members');
@@ -197,7 +198,7 @@ app.post('/loggingIn', async (req,res) => {
     }
 });
 
-app.get('/members', (req,res) => {
+app.get('/members', sessionValidation, (req,res) => {
     if (!req.session.authenticated) {
         return res.redirect('/?notLoggedIn=true');
     }
@@ -219,14 +220,78 @@ app.get('/members', (req,res) => {
     res.render('members', {
         username: req.session.username,
         justSignedUp: req.session.justSignedUp,
-        image: req.session.image
+        image: req.session.image,
+        user_type: req.session.user_type
     });
 
     // Reset the justSignedUp flag
     req.session.justSignedUp = false;
 });
 
-app.post('/logout', (req, res) => {
+function isValidSession(req) {
+    if (req.session.authenticated) {
+        return true;
+    }
+    return false;
+}
+
+function sessionValidation(req,res,next) {
+    if (isValidSession(req)) {
+        next();
+    }
+    else {
+        res.redirect('/login');
+    }
+}
+
+
+function isAdmin(req) {
+    if (req.session.user_type == 'admin') {
+        return true;
+    }
+    return false;
+}
+
+function adminAuthorization(req, res, next) {
+    if (!req.session.authenticated) {
+        res.redirect('/login');
+        return;
+    }
+
+    if (!isAdmin(req)) {
+        res.status(403);
+        res.render("adminNotAuth", {error: 'You are not authorized to view this page'});
+        return;
+    }
+    else {
+        next();
+    }
+}
+
+app.get('/admin', sessionValidation, adminAuthorization, async (req,res) => {
+    const result = await userCollection.find().project({username: 1, email: 1,user_type: 1, _id: 0}).toArray();
+
+    res.render('admin', {users: result});
+});
+
+app.post('/toggleAdminStatus', sessionValidation, adminAuthorization, async (req, res) => {
+    const username = req.body.username;
+  
+    const user = await userCollection.findOne({ username });
+  
+    const newUserType = user.user_type === "admin" ? "user" : "admin";
+    await userCollection.updateOne({ username }, { $set: { user_type: newUserType } });
+
+    if (req.session.username === username && newUserType === "user") {
+        req.session.user_type = "user";
+      }
+  
+    // Redirect back to the admin page to see the updated user list
+    res.redirect('/admin');
+
+  });
+
+app.get('/logout', (req, res) => {
     req.session.destroy();
     res.render('logout');
 });

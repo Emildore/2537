@@ -7,7 +7,16 @@
         <form action="/" method="get">
             <button type="submit">Home</button>
         </form>
-        <form action="/logout" method="post">
+
+        <!-- Check user type from session -->
+        <% if (user_type === 'admin') { %>
+            <form action="/admin" method="get">
+                <button type="submit">Admin Page</button>
+            </form>
+        <% } %>
+
+        <form action="/logout" method="get">
             <button type="submit">Log out</button>
         </form>
+
 <%- include('templates/footer') %>
