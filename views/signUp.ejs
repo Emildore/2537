@@ -1,0 +1,34 @@
+<%- include('templates/header') %>
+    <h1>Sign Up:</h1>
+        <% if (error === "username") { %>
+            <p style='color: red;'>Username already exists. Please choose a different username.</p>
+        <% } else if (error === "email") { %>
+            <p style='color: red;'>Email address already in use. Please choose a different email address.</p>
+        <% } %>
+
+        <form action='/submitUser' method='post'>
+            <input name='username' type='text' placeholder='username'><br><br>
+            <input name='email' type='email' placeholder='email'><br>
+            <% if (req.query.error && req.query.error.includes("password")) { %>
+                <p style='color: red;'>Password must contain at least <br> 1 special character,<br> 1 upper case letter,<br> 1 number, <br>and be at least 6 characters long.</p>
+                <p style='color: red;'>Please try again.</p>
+            <% } else { %>
+                <p style='color: gray;'>Password must contain at least <br> 1 special character,<br> 1 upper case letter,<br> 1 number, <br>and be at least 6 characters long.</p>
+            <% } %>
+            <input name='password' type='password' placeholder='password'><br><br>
+            <button>Submit</button>
+        </form>
+        <form action='/' method='get'>
+            <button type='submit'>Back</button>
+        </form>
+
+        <% if (req.query.blankUsername) { %>
+            <p style='color: red;'>Username field cannot be left blank.</p>
+        <% } %>
+        <% if (req.query.blankEmail) { %>
+            <p style='color: red;'>Email field cannot be left blank.</p>
+        <% } %>
+        <% if (req.query.blankPassword) { %>
+            <p style='color: red;'>Password field cannot be left blank.</p>
+        <% } %>
+<%- include('templates/footer') %>

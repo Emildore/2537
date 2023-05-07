@@ -1,0 +1,13 @@
+<%- include('templates/header') %>
+    <h2><%= username %>'s Page</h2>
+        <% if (justSignedUp) { %>
+            <p>Successfully signed up as <%= username %>!</p>
+        <% } %>
+        <img src="<%= image %>" width="300" height="400"><br><br>
+        <form action="/" method="get">
+            <button type="submit">Home</button>
+        </form>
+        <form action="/logout" method="post">
+            <button type="submit">Log out</button>
+        </form>
+<%- include('templates/footer') %>

@@ -29,6 +29,8 @@ var {database} = include('databaseConnection');
 
 const userCollection = database.db(mongodb_database).collection("users");
 
+app.set('view engine', 'ejs');
+
 app.use(express.urlencoded({extended: false}));
 
 var mongoStore = MongoStore.create({
@@ -47,85 +49,12 @@ app.use(session({
 ));
 
 app.get('/', (req, res) => {
-
-    var html = `
-    <h1> Comp 2537 <br> Assignment 1 <br> Home Page</h1>
-    `
-
-    if (req.session.authenticated) {
-        // User is logged in
-        html += `
-        <h2>Hello, ${req.session.username}!</h2>
-        <form action='/members' method='get'>
-            <button type='submit'>Members Area</button>
-        </form>
-        <form action='/logout' method='post'>
-            <button type='submit'>Log out</button>
-        </form>
-        `;
-    } else {
-        // User is not logged in
-        html += `
-        <form action='/signUp' method='get'>
-            <button type='submit'>Sign Up</button>
-        </form>
-        <form action='/login' method='get'>
-            <button type='submit'>Login</button>
-        </form>
-        `;
-    }
-
-    if (req.query.notLoggedIn) {
-        html += "<p style='color: red;'>You must be logged in to access the members page.</p>";
-    }
-
-    res.send(html);
+    res.render('index', {req: req});
 });
 
 app.get('/signUp', (req,res) => {
-    var error = req.query.error;
-    var errorMessage = "";
-
-    if (error === "username") {
-        errorMessage = "<p style='color: red;'>Username already exists. Please choose a different username.</p>";
-      } else if (error === "email") {
-        errorMessage = "<p style='color: red;'>Email address already in use. Please choose a different email address.</p>";
-      }
-    
-    var passwordMessage = "<p style='color: gray;'>Password must contain at least <br> 1 special character,<br> 1 upper case letter,<br> 1 number, <br>and be at least 6 characters long.</p>";
-
-    if (req.query.error && req.query.error.includes("password")) {
-        var passwordMessage = "<p style='color: red;'>Password must contain at least <br> 1 special character,<br> 1 upper case letter,<br> 1 number, <br>and be at least 6 characters long.</p>";
-        passwordMessage += "<p style='color: red;'>Please try again.</p>";
-    }
-
-    if (req.query.blankUsername) {
-        errorMessage += "<p style='color: red;'>Username field cannot be left blank.</p>";
-    }
-
-    if (req.query.blankEmail) {
-        errorMessage += "<p style='color: red;'>Email field cannot be left blank.</p>";
-    }
-
-    if (req.query.blankPassword) {
-        errorMessage += "<p style='color: red;'>Password field cannot be left blank.</p>";
-    }
-    
-    var html = `
-        <h1>Sign Up: </h1>
-        ${errorMessage}
-        <form action='/submitUser' method='post'>
-        <input name='username' type='text' placeholder='username'><br><br>
-        <input name='email' type='email' placeholder='email'><br>
-        ${passwordMessage}
-        <input name='password' type='password' placeholder='password'><br><br>
-        <button>Submit</button>
-        </form>
-        <form action='/' method='get'>
-        <button type='submit'>Back</button>
-        </form>
-    `;
-    res.send(html);
+    let error = req.query.error;
+    res.render('signUp', {error: error, req: req});
 });
 
 app.post('/submitUser', async (req,res) => {
@@ -160,6 +89,7 @@ app.post('/submitUser', async (req,res) => {
         }
     );
 
+    // Joi validation to check if the submitted username, password, and email meet specific requirements when signing up a new user.
     const validationResult = schema.validate({username, password, email});
     if (validationResult.error != null) {
         console.log(validationResult.error);
@@ -202,34 +132,7 @@ app.get('/login', (req,res) => {
         return res.redirect('/members'); // Redirect to members page
     }
 
-    var html = `
-    <h1>Login:</h1>
-        <form action='/loggingIn' method='post'>
-            <input name='identifier' type='text' placeholder='username or email'><br><br>
-            <input name='password' type='password' placeholder='password'><br><br>
-            <button>Submit</button>
-        </form>
-        <form action='/' method='get'>
-        <button type='submit'>Back</button>
-        </form>
-    `;
-    if (req.query.loginError) {
-        html += "<p style='color: red;'>Invalid username and/or password</p>";
-    }
-
-    var blankFields = req.query.blankFields;
-    if (blankFields) {
-        const fields = blankFields.split(',');
-        fields.forEach(field => {
-            if (field === "identifier") {
-                html += "<p style='color: red;'>Username or email field cannot be left blank.</p>";
-            } else if (field === "password") {
-                html += "<p style='color: red;'>Password field cannot be left blank.</p>";
-            }
-        });
-    }
-    
-    res.send(html);
+    res.render('login', { req: req });
 });
 
 app.post('/loggingIn', async (req,res) => {
@@ -312,38 +215,25 @@ app.get('/members', (req,res) => {
     // Set image URL in session
     req.session.image = images[randomIndex];
 
-    var html = `
-    <h2>${req.session.username}'s Page</h2>`;
-    if (req.session.justSignedUp) {
-        html += `<p>Successfully signed up as ${req.session.username}!</p>`;
-        req.session.justSignedUp = false; // reset flag
-    }
-    html += `<img src="${req.session.image}" width="300" height="400"><br><br>
-    <form action="/" method="get">
-    <button type="submit">Home</button>
-    </form>
-    <form action="/logout" method="post">
-        <button type="submit">Log out</button>
-    </form>
-    `;
-    res.send(html);
+    // Render the members.ejs template with the necessary variables
+    res.render('members', {
+        username: req.session.username,
+        justSignedUp: req.session.justSignedUp,
+        image: req.session.image
+    });
+
+    // Reset the justSignedUp flag
+    req.session.justSignedUp = false;
 });
 
 app.post('/logout', (req, res) => {
     req.session.destroy();
-    var html = `
-      <div>You are logged out.</div><br>
-      <form action="/" method="get">
-        <button type="submit">Home</button>
-      </form>
-    `;
-    res.send(html);
+    res.render('logout');
 });
 
 app.get("/does_not_exist", (req, res) => {
     res.status(404);
-    var html = `<h1>404 - Page Not Found</h1>`;
-    res.send(html);
+    res.render('notFound');
 });
 
 app.use(express.static(__dirname + "/public"));

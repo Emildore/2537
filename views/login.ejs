@@ -1,0 +1,24 @@
+<%- include('templates/header') %>
+    <h1>Login:</h1>
+        <form action='/loggingIn' method='post'>
+            <input name='identifier' type='text' placeholder='username or email'><br><br>
+            <input name='password' type='password' placeholder='password'><br><br>
+            <button>Submit</button>
+        </form>
+        <form action='/' method='get'>
+            <button type='submit'>Back</button>
+        </form>
+        <% if (req.query.loginError) { %>
+            <p style='color: red;'>Invalid username and/or password</p>
+        <% } %>
+        <% if (req.query.blankFields) { %>
+            <% const fields = req.query.blankFields.split(','); %>
+            <% fields.forEach(field => { %>
+                <% if (field === "identifier") { %>
+                    <p style='color: red;'>Username or email field cannot be left blank.</p>
+                <% } else if (field === "password") { %>
+                    <p style='color: red;'>Password field cannot be left blank.</p>
+                <% } %>
+            <% }); %>
+        <% } %>
+<%- include('templates/footer') %>
