@@ -49,12 +49,12 @@ app.use(session({
 ));
 
 app.get('/', (req, res) => {
-    res.render('index', {req: req});
+    res.render('index', {authenticated: req.session.authenticated, user_type: req.session.user_type, req: req});
 });
 
 app.get('/signUp', (req,res) => {
     let error = req.query.error;
-    res.render('signUp', {error: error, req: req});
+    res.render('signUp', {error: error, authenticated: req.session.authenticated, req: req});
 });
 
 app.post('/submitUser', async (req,res) => {
@@ -132,7 +132,7 @@ app.get('/login', (req,res) => {
         return res.redirect('/members'); // Redirect to members page
     }
 
-    res.render('login', { req: req });
+    res.render('login', { authenticated: req.session.authenticated, req: req });
 });
 
 app.post('/loggingIn', async (req,res) => {
@@ -199,9 +199,6 @@ app.post('/loggingIn', async (req,res) => {
 });
 
 app.get('/members', sessionValidation, (req,res) => {
-    if (!req.session.authenticated) {
-        return res.redirect('/?notLoggedIn=true');
-    }
 
     // Array of image URLs
     const images = [
@@ -210,18 +207,14 @@ app.get('/members', sessionValidation, (req,res) => {
     '/Cat3.jpg'
     ];
 
-    // Generate random index for image array
-    const randomIndex = Math.floor(Math.random() * images.length);
-
-    // Set image URL in session
-    req.session.image = images[randomIndex];
-
     // Render the members.ejs template with the necessary variables
     res.render('members', {
         username: req.session.username,
         justSignedUp: req.session.justSignedUp,
-        image: req.session.image,
-        user_type: req.session.user_type
+        images: images,
+        user_type: req.session.user_type,
+        authenticated: req.session.authenticated,
+        req: req 
     });
 
     // Reset the justSignedUp flag
@@ -240,7 +233,7 @@ function sessionValidation(req,res,next) {
         next();
     }
     else {
-        res.redirect('/login');
+        res.redirect('/login?notLoggedIn=true');
     }
 }
 
@@ -260,7 +253,8 @@ function adminAuthorization(req, res, next) {
 
     if (!isAdmin(req)) {
         res.status(403);
-        res.render("adminNotAuth", {error: 'You are not authorized to view this page'});
+        res.render("adminNotAuth", {error: 'You are not authorized to view this page', authenticated: req.session.authenticated,
+        user_type: req.session.user_type});
         return;
     }
     else {
@@ -271,7 +265,7 @@ function adminAuthorization(req, res, next) {
 app.get('/admin', sessionValidation, adminAuthorization, async (req,res) => {
     const result = await userCollection.find().project({username: 1, email: 1,user_type: 1, _id: 0}).toArray();
 
-    res.render('admin', {users: result});
+    res.render('admin', {users: result, authenticated: req.session.authenticated, user_type: req.session.user_type, req: req });
 });
 
 app.post('/toggleAdminStatus', sessionValidation, adminAuthorization, async (req, res) => {
@@ -284,7 +278,7 @@ app.post('/toggleAdminStatus', sessionValidation, adminAuthorization, async (req
 
     if (req.session.username === username && newUserType === "user") {
         req.session.user_type = "user";
-      }
+    }
   
     // Redirect back to the admin page to see the updated user list
     res.redirect('/admin');
@@ -293,12 +287,15 @@ app.post('/toggleAdminStatus', sessionValidation, adminAuthorization, async (req
 
 app.get('/logout', (req, res) => {
     req.session.destroy();
-    res.render('logout');
+    res.render('logout', { authenticated: false });
 });
 
 app.get("/does_not_exist", (req, res) => {
     res.status(404);
-    res.render('notFound');
+    res.render('notFound', {
+        authenticated: req.session.authenticated,
+        user_type: req.session.user_type
+      });
 });
 
 app.use(express.static(__dirname + "/public"));

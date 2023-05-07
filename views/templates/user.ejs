@@ -1,10 +1,12 @@
 <tr>
-    <td><%= user.username %></td>
-    <td><%= user.user_type %></td>
-    <td>
+  <td><%= user.username %></td>
+  <td><%= user.user_type %></td>
+  <td>
       <form action="/toggleAdminStatus" method="post">
-        <input type="hidden" name="username" value="<%= user.username %>">
-        <input type="submit" value="<%= user.user_type == 'admin' ? 'Demote' : 'Promote' %>">
+          <input type="hidden" name="username" value="<%= user.username %>">
+          <button type="submit" class="btn <%= user.user_type == 'admin' ? 'btn-danger' : 'btn-primary' %>">
+              <%= user.user_type == 'admin' ? 'Demote' : 'Promote' %>
+          </button>
       </form>
-    </td>
+  </td>
 </tr>

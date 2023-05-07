@@ -1,24 +1,31 @@
 <%- include('templates/header') %>
-    <h1>Login:</h1>
-        <form action='/loggingIn' method='post'>
-            <input name='identifier' type='text' placeholder='username or email'><br><br>
-            <input name='password' type='password' placeholder='password'><br><br>
-            <button>Submit</button>
-        </form>
-        <form action='/' method='get'>
-            <button type='submit'>Back</button>
-        </form>
-        <% if (req.query.loginError) { %>
-            <p style='color: red;'>Invalid username and/or password</p>
-        <% } %>
-        <% if (req.query.blankFields) { %>
-            <% const fields = req.query.blankFields.split(','); %>
-            <% fields.forEach(field => { %>
-                <% if (field === "identifier") { %>
-                    <p style='color: red;'>Username or email field cannot be left blank.</p>
-                <% } else if (field === "password") { %>
-                    <p style='color: red;'>Password field cannot be left blank.</p>
-                <% } %>
-            <% }); %>
-        <% } %>
+
+    <% if (req.query.notLoggedIn) { %>
+        <p class="text-danger text-center">You must be logged in to access the members page.</p>
+    <% } %>
+
+    <main class="form-signin w-100 m-auto">
+    <div class="d-flex justify-content-center py-3">
+    <form class="text-center" style="width: 40%" action="/loggingIn" method="post">
+        <h1 class="h3 mb-3 fw-normal">Please sign in</h1>
+
+        <div class="form-floating">
+        <input name='identifier' type="text" class="form-control" placeholder="name@example.com">
+        <label for="floatingInput">Username/Email address</label>
+        </div>
+        <div class="form-floating">
+        <input  name='password' type="password" class="form-control" placeholder="Password">
+        <label for="floatingPassword">Password</label>
+        </div>
+
+        <div class="checkbox mb-3">
+        <label>
+            <input type="checkbox" value="remember-me"> Remember me
+        </label>
+        </div>
+        <button class="w-100 btn btn-lg btn-primary" type="submit">Sign in</button>
+    </form>
+    </div>
+    </main>
+    
 <%- include('templates/footer') %>

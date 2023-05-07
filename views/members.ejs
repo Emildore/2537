@@ -1,22 +1,19 @@
 <%- include('templates/header') %>
-    <h2><%= username %>'s Page</h2>
-        <% if (justSignedUp) { %>
-            <p>Successfully signed up as <%= username %>!</p>
-        <% } %>
-        <img src="<%= image %>" width="300" height="400"><br><br>
-        <form action="/" method="get">
-            <button type="submit">Home</button>
-        </form>
 
-        <!-- Check user type from session -->
-        <% if (user_type === 'admin') { %>
-            <form action="/admin" method="get">
-                <button type="submit">Admin Page</button>
-            </form>
-        <% } %>
-
-        <form action="/logout" method="get">
-            <button type="submit">Log out</button>
-        </form>
+    <h2 class="text-center"><%= username %>'s Page</h2>
+    <% if (justSignedUp) { %>
+        <p class="text-center">Successfully signed up as <%= username %>!</p>
+    <% } %>
+    <div class="container">
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+        <% images.forEach(image => { %>
+            <div class="col">
+            <div class="card shadow-sm">
+                <img src="<%= image %>" class="card-img-top" width="300" height="400">
+            </div>
+            </div>
+        <% }); %>
+        </div>
+    </div>
 
 <%- include('templates/footer') %>

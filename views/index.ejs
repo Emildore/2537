@@ -1,26 +1,15 @@
 <%- include('templates/header') %>
-    <h1>Comp 2537 <br> Assignment 1 <br> Home Page</h1>
 
-        <% if (req.session.authenticated) { %>
-            <!-- User is logged in -->
-            <h2>Hello, <%= req.session.username %>!</h2>
-            <form action='/members' method='get'>
-                <button type='submit'>Members Area</button>
-            </form>
-            <form action='/logout' method='get'>
-                <button type='submit'>Log out</button>
-            </form>
-        <% } else { %>
-            <!-- User is not logged in -->
-            <form action='/signUp' method='get'>
-                <button type='submit'>Sign Up</button>
-            </form>
-            <form action='/login' method='get'>
-                <button type='submit'>Login</button>
-            </form>
-        <% } %>
+    <div class="d-flex justify-content-center py-3">
+        <main class="px-3">
+            <h1>Comp 2537</h1>
+            <p class="text-center lead">Assignment 2</p>
+            <p class="text-center lead">Home Page</p>
+    
+            <% if (req.session.authenticated) { %>
+            <h2 class="text-center mt-4">Hello, <%= req.session.username %>!</h2>
+            <% } %>
+        </main>
+    </div>
 
-        <% if (req.query.notLoggedIn) { %>
-            <p style='color: red;'>You must be logged in to access the members page.</p>
-        <% } %>
 <%- include('templates/footer') %>

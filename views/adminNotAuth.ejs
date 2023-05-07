@@ -1,7 +1,14 @@
-<%- include('templates/header') %> 
-    <h1 style='color:red'>Error!</h1>
-    <div><%= error %> </div><br>
-    <form action="/members" method="get" style="display:inline;">
-        <input type="submit" value="Back to Members Page">
-    </form>
-<%- include('templates/footer') %> 
+<%- include('templates/header') %>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="alert alert-danger text-center mt-5" role="alert">
+                <h1 class="alert-heading">Error!</h1>
+                <div><%= error %> </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('templates/footer') %>
