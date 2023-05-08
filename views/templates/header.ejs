@@ -16,21 +16,21 @@
             </a>
           </div>
     
-          <ul class="nav col-12 col-md-auto mb-2 justify-content-center mb-md-0">
-            <li><a href="/" class="nav-link px-2">Home</a></li>
-            <li><a href="/members" class="nav-link px-2">Members</a></li>
-            <li><a href="/ghjcgmv" class="nav-link px-2">404</a></li>
-            <% if (authenticated && user_type === 'admin') { %>
-                <li><a href="/admin" class="nav-link px-2">Admin</a></li>
+          <ul class="nav nav-pills justify-content-center">
+            <% for(var i = 0; i < locals.navLinks.length; i++) { %>
+                <li><a href="<%= locals.navLinks[i].link %>" class="nav-link <% if (locals.navLinks[i].link == locals.currentURL) {%> active<%} %>"><%= locals.navLinks[i].name %></a></li>
+            <% } %>
+            <% if (locals.authenticated && locals.user_type === 'admin') { %>
+              <li><a href="/admin" class="nav-link <% if (locals.currentURL === '/admin') {%> active<%} %>">Admin</a></li>
             <% } %>
           </ul>
     
           <div class="col-md-3 text-end">
-            <% if (!authenticated) { %>
-                <a href="/login" class="btn btn-outline-primary me-2">Login</a>
-                <a href="/signup" class="btn btn-outline-primary me-2">Sign-up</a>
+            <% if (!locals.authenticated) { %>
+                <a href="/login" class="btn btn-outline-primary me-2<% if (locals.currentURL === '/login') {%> active<%} %>">Login</a>
+                <a href="/signup" class="btn btn-outline-primary me-2<% if (locals.currentURL === '/signup') {%> active<%} %>">Sign-up</a>
               <% } else { %>
-                <a href="/logout" class='btn btn-secondary'>Log-Out</a>
+                <a href="/logout" class='btn btn-secondary<% if (locals.currentURL === '/logout') {%> active<%} %>'>Log-Out</a>
               <% } %>
           </div>
         </header>

@@ -1,31 +1,45 @@
 <%- include('templates/header') %>
 
-    <% if (req.query.notLoggedIn) { %>
-        <p class="text-danger text-center">You must be logged in to access the members page.</p>
-    <% } %>
-
-    <main class="form-signin w-100 m-auto">
-    <div class="d-flex justify-content-center py-3">
-    <form class="text-center" style="width: 40%" action="/loggingIn" method="post">
-        <h1 class="h3 mb-3 fw-normal">Please sign in</h1>
-
-        <div class="form-floating">
-        <input name='identifier' type="text" class="form-control" placeholder="name@example.com">
-        <label for="floatingInput">Username/Email address</label>
-        </div>
-        <div class="form-floating">
-        <input  name='password' type="password" class="form-control" placeholder="Password">
-        <label for="floatingPassword">Password</label>
-        </div>
-
-        <div class="checkbox mb-3">
-        <label>
-            <input type="checkbox" value="remember-me"> Remember me
-        </label>
-        </div>
-        <button class="w-100 btn btn-lg btn-primary" type="submit">Sign in</button>
-    </form>
+<% if (req.query.notLoggedIn) { %>
+    <div class="alert alert-danger text-center" role="alert">
+        You must be logged in to access the members page.
     </div>
-    </main>
-    
+<% } %>
+
+<% if (req.query.blankFields) { %>
+    <div class="alert alert-warning text-center" role="alert">
+        Please fill in all the fields.
+    </div>
+<% } %>
+
+<% if (req.query.loginError) { %>
+    <div class="alert alert-danger text-center" role="alert">
+        Invalid username, email or password.
+    </div>
+<% } %>
+
+<main class="form-signin w-100 m-auto">
+    <div class="d-flex justify-content-center py-3">
+        <form class="text-center" style="width: 40%" action="/loggingIn" method="post">
+            <h1 class="h3 mb-3 fw-normal">Please sign in</h1>
+
+            <div class="form-floating">
+                <input name='identifier' type="text" class="form-control" placeholder="name@example.com">
+                <label for="floatingInput">Username/Email address</label>
+            </div>
+            <div class="form-floating">
+                <input name='password' type="password" class="form-control" placeholder="Password">
+                <label for="floatingPassword">Password</label>
+            </div>
+
+            <div class="checkbox mb-3">
+                <label>
+                    <input type="checkbox" value="remember-me"> Remember me
+                </label>
+            </div>
+            <button class="w-100 btn btn-lg btn-primary" type="submit">Sign in</button>
+        </form>
+    </div>
+</main>
+
 <%- include('templates/footer') %>

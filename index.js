@@ -1,60 +1,57 @@
-require("./utils.js")
-
+require("./utils.js");
 require('dotenv').config();
+const url = require('url');
 const express = require('express');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const bcrypt = require('bcrypt');
-const saltRounds = 12;
-
-const port = process.env.PORT || 3000;
-
-const app = express();
-
 const Joi = require('joi');
 
-const expireTime = 1000 * 60 * 60 ; // 1 Hour
+const port = process.env.PORT || 3000;
+const app = express();
+const saltRounds = 12;
+const expireTime = 1000 * 60 * 60; // 1 Hour
 
-/* Secret information section */
-const mongodb_host = process.env.MONGODB_HOST;
-const mongodb_user = process.env.MONGODB_USER;
-const mongodb_password = process.env.MONGODB_PASSWORD;
-const mongodb_database = process.env.MONGODB_DATABASE;
-const mongodb_session_secret = process.env.MONGODB_SESSION_SECRET;
-
-const node_session_secret = process.env.NODE_SESSION_SECRET;
-/* End secret information section */
-
-var {database} = include('databaseConnection');
-
-const userCollection = database.db(mongodb_database).collection("users");
+const { database } = include('databaseConnection');
+const userCollection = database.db(process.env.MONGODB_DATABASE).collection("users");
 
 app.set('view engine', 'ejs');
-
-app.use(express.urlencoded({extended: false}));
-
-var mongoStore = MongoStore.create({
-    mongoUrl: `mongodb+srv://${mongodb_user}:${mongodb_password}@${mongodb_host}/test`,
-    crypto: {
-        secret: mongodb_session_secret
-    }
-})
+app.use(express.urlencoded({ extended: false }));
 
 app.use(session({
-    secret: node_session_secret,
-        store: mongoStore, //default is memory store
-        saveUninitialized: false,
-        resave: true
-}
-));
+    secret: process.env.NODE_SESSION_SECRET,
+    store: MongoStore.create({
+        mongoUrl: `mongodb+srv://${process.env.MONGODB_USER}:${process.env.MONGODB_PASSWORD}@${process.env.MONGODB_HOST}/test`,
+        crypto: { secret: process.env.MONGODB_SESSION_SECRET }
+    }),
+    saveUninitialized: false,
+    resave: true
+}));
+
+const navLinks = [
+    { name: "Home", link: "/" },
+    { name: "Members", link: "/members" },
+    { name: "404", link: "/does_not_exist" }
+];
+
+app.use((req, res, next) => {
+    app.locals.authenticated = req.session.authenticated;
+    app.locals.user_type = req.session.user_type;
+    app.locals.username = req.session.username;
+    app.locals.navLinks = navLinks;
+    app.locals.currentURL = url.parse(req.url).pathname;
+    app.locals.error = req.query.error;
+    app.locals.req = req;
+    next();
+});
+
 
 app.get('/', (req, res) => {
-    res.render('index', {authenticated: req.session.authenticated, user_type: req.session.user_type, req: req});
+    res.render('index');
 });
 
 app.get('/signUp', (req,res) => {
-    let error = req.query.error;
-    res.render('signUp', {error: error, authenticated: req.session.authenticated, req: req});
+    res.render('signUp');
 });
 
 app.post('/submitUser', async (req,res) => {
@@ -132,117 +129,74 @@ app.get('/login', (req,res) => {
         return res.redirect('/members'); // Redirect to members page
     }
 
-    res.render('login', { authenticated: req.session.authenticated, req: req });
+    res.render('login');
 });
 
-app.post('/loggingIn', async (req,res) => {
-    var identifier = req.body.identifier;
-    var password = req.body.password;
+app.post('/loggingIn', async (req, res) => {
+    const { identifier, password } = req.body;
+    const blankFields = [
+        !identifier && "identifier",
+        !password && "password",
+    ].filter(Boolean);
 
-    const blankFields = [];
-    if (!identifier) {
-        blankFields.push("identifier");
-    }
-
-    if (!password) {
-        blankFields.push("password");
-    }
-
-    if (blankFields.length > 0) {
+    if (blankFields.length) {
         res.redirect(`/login?blankFields=${blankFields.join(',')}`);
         return;
     }
 
-    // Joi validation to check if the submitted identifier (username or email) meets specific requirements when logging in.
     const schema = Joi.string().max(20).required();
-    const validationResult = schema.validate(identifier);
-    if (validationResult.error != null) {
-        console.log(validationResult.error);
+    if (schema.validate(identifier).error) {
         res.redirect('/login?blankFields=true');
         return;
     }
 
-    let query;
-    if (identifier.includes('@')) { // Check if the identifier is an email
-        query = { email: identifier };
-    } else {
-        query = { username: identifier };
-    }
-
+    const query = identifier.includes('@') ? { email: identifier } : { username: identifier };
     const result = await userCollection
         .find(query)
-        .project({username: 1, password: 1,user_type: 1, _id: 1})
+        .project({ username: 1, password: 1, user_type: 1, _id: 1 })
         .toArray();
-    console.log(result);
-    
-    if (result.length != 1) {
-        console.log("User Not Found");
+
+    if (result.length !== 1) {
         res.redirect('/login?loginError=true');
         return;
     }
 
-    //set session variables
     if (await bcrypt.compare(password, result[0].password)) {
-        console.log("Correct password");
         req.session.authenticated = true;
         req.session.username = result[0].username;
         req.session.user_type = result[0].user_type;
         req.session.cookie.maxAge = expireTime;
 
         res.redirect('/members');
-        return;
     } else {
-        console.log("Incorrect password");
         res.redirect('/login?loginError=true');
-        return;
     }
 });
 
-app.get('/members', sessionValidation, (req,res) => {
-
-    // Array of image URLs
+app.get('/members', sessionValidation, (req, res) => {
     const images = [
-    '/Cat1.jpg',
-    '/Cat2.jpg',
-    '/Cat3.jpg'
+        '/Cat1.jpg',
+        '/Cat2.jpg',
+        '/Cat3.jpg'
     ];
 
-    // Render the members.ejs template with the necessary variables
-    res.render('members', {
-        username: req.session.username,
-        justSignedUp: req.session.justSignedUp,
-        images: images,
-        user_type: req.session.user_type,
-        authenticated: req.session.authenticated,
-        req: req 
-    });
+    // Render the members.ejs template with the images
+    res.render('members', { images, justSignedUp: req.session.justSignedUp });
 
     // Reset the justSignedUp flag
     req.session.justSignedUp = false;
 });
 
 function isValidSession(req) {
-    if (req.session.authenticated) {
-        return true;
-    }
-    return false;
+    return req.session.authenticated;
 }
 
-function sessionValidation(req,res,next) {
-    if (isValidSession(req)) {
-        next();
-    }
-    else {
-        res.redirect('/login?notLoggedIn=true');
-    }
+function sessionValidation(req, res, next) {
+    isValidSession(req) ? next() : res.redirect('/login?notLoggedIn=true');
 }
-
 
 function isAdmin(req) {
-    if (req.session.user_type == 'admin') {
-        return true;
-    }
-    return false;
+    return req.session.user_type == 'admin';
 }
 
 function adminAuthorization(req, res, next) {
@@ -253,19 +207,17 @@ function adminAuthorization(req, res, next) {
 
     if (!isAdmin(req)) {
         res.status(403);
-        res.render("adminNotAuth", {error: 'You are not authorized to view this page', authenticated: req.session.authenticated,
-        user_type: req.session.user_type});
+        res.render("adminNotAuth", {error: 'You are not authorized to view this page'});
         return;
     }
-    else {
-        next();
-    }
+
+    next();
 }
 
 app.get('/admin', sessionValidation, adminAuthorization, async (req,res) => {
     const result = await userCollection.find().project({username: 1, email: 1,user_type: 1, _id: 0}).toArray();
 
-    res.render('admin', {users: result, authenticated: req.session.authenticated, user_type: req.session.user_type, req: req });
+    res.render('admin', {users: result});
 });
 
 app.post('/toggleAdminStatus', sessionValidation, adminAuthorization, async (req, res) => {
@@ -292,10 +244,7 @@ app.get('/logout', (req, res) => {
 
 app.get("/does_not_exist", (req, res) => {
     res.status(404);
-    res.render('notFound', {
-        authenticated: req.session.authenticated,
-        user_type: req.session.user_type
-      });
+    res.render('notFound');
 });
 
 app.use(express.static(__dirname + "/public"));

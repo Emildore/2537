@@ -6,8 +6,8 @@
             <p class="text-center lead">Assignment 2</p>
             <p class="text-center lead">Home Page</p>
     
-            <% if (req.session.authenticated) { %>
-            <h2 class="text-center mt-4">Hello, <%= req.session.username %>!</h2>
+            <% if (authenticated) { %>
+            <h2 class="text-center mt-4">Hello, <%= username %>!</h2>
             <% } %>
         </main>
     </div>
