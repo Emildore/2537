@@ -31,7 +31,6 @@ app.use(session({
 const navLinks = [
     { name: "Home", link: "/" },
     { name: "Members", link: "/members" },
-    { name: "404", link: "/does_not_exist" }
 ];
 
 app.use((req, res, next) => {
