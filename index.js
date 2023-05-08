@@ -206,7 +206,7 @@ function adminAuthorization(req, res, next) {
 
     if (!isAdmin(req)) {
         res.status(403);
-        res.render("adminNotAuth", {error: 'You are not authorized to view this page'});
+        res.render("adminNotAuth", {error: 'Error 403 - You are not authorized to view this page'});
         return;
     }
 
